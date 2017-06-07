@@ -5,6 +5,7 @@ from geometry_msgs.msg import Twist
 
 def forward():
 	rospy.init_node('forward', anonymous=True)
+
 	pub = rospy.Publisher('kobuki_command', Twist, queue_size=10)
 	command = Twist()
 
