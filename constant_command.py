@@ -3,6 +3,7 @@
 import rospy
 from kobuki_msgs.msg import Led
 from kobuki_msgs.msg import ButtonEvent
+from kobuki_msgs.msg import BumperEvent
 import math
 from geometry_msgs.msg import Twist
 
@@ -30,14 +31,25 @@ def cleanUp():
     pub.publish(currentCommand)
     rospy.sleep(1)
 
+def bumperCallback(data):
+    global pub1, led, buttonGreen, targetCommand
+    if data.state == 1:
+	targetCommand.linear.x = 0
+	targetCommand.angular.z = 0
+	print("button: " + str(buttonGreen) + "ledBefore:" + str(led))
+	buttonGreen = False
+	led.value= 3
+	pub1.publish(led)
+
 def buttonCallback(data):
-    global pub1, led, buttonGreen
+    global pub1, led, buttonGreen, targetCommand
     str = ""
     if data.state != 0:
     	if data.button == 0:
         	str = str + "Button 0 is "
 		if buttonGreen == True:
 			targetCommand.linear.x = 0
+			targetCommand.angular.z = 0
 			led.value = 3
 			buttonGreen = False
 		else:
@@ -56,32 +68,32 @@ def buttonCallback(data):
     	rospy.loginfo(str)
 
 def constantCommand():
-    global pub, targetCommand, currentCommand, led, pub1
+    global pub, targetCommand, currentCommand, led, pub1, buttonGreen
     rospy.init_node("constant_command", anonymous=True)
     rospy.Subscriber("kobuki_command", Twist, updateCommand)
     rospy.on_shutdown(cleanUp)
     rospy.Subscriber('/mobile_base/events/button', ButtonEvent, buttonCallback)
     rospy.Subscriber('/mobile_base/events/bumper', BumperEvent, bumperCallback)
 
-    if buttonGreen == True:
-   	led.value = 1
-    	pub1.publish(led)
-    	print(str(led))
-        
-
     while pub.get_num_connections() == 0:
-        pass
-	
+	pass
+
+    if buttonGreen == True:
+	led.value = 1
+	pub1.publish(led)
+	print(str(led))
+
     while not rospy.is_shutdown():
 	if buttonGreen == True:
 		pub.publish(targetCommand)
-		print(str(targetCommand))
+		#print(str(targetCommand))
 	else:
 		tempCommand = targetCommand
 		tempCommand.linear.x = 0.0	
 		tempCommand.angular.z = 0.0
 		pub.publish(tempCommand)
-		print(str(tempCommand))
+		#print(str(tempCommand))
+	rospy.sleep(0.1)
 
 if __name__ == '__main__':
     constantCommand()
