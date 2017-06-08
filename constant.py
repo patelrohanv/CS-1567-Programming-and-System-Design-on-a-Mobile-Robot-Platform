@@ -21,10 +21,10 @@ def forward():
 	command.angular.z = 0.0
 	pub.publish(command)
 	rospy.sleep(2.0)
-#	command.linear.x = 0.0
-#	command.angular.z = 0.0
-#	pub.publish(command)
-#	rospy.sleep(2.0)
+	command.linear.x = 0.0
+	command.angular.z = 0.0
+	pub.publish(command)
+	rospy.sleep(2.0)
 
 if __name__== '__main__':
 	forward()
