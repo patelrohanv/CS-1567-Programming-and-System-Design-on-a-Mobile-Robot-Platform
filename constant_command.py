@@ -35,16 +35,22 @@ def constantCommand():
 	
     while not rospy.is_shutdown():
 	print("same")
+	if(currentCommand.linear.x > 0):
+		print("same2")
+		#break
+	if(targetCommand.linear.x > 0):
+		print("same3")
+		#break
         # Your code goes here
 	#if the number is greater than the input, subtract from it.
-	while True:
-		if(currentCommand.linear.x > 0):
-			pub.publish(currentCommand)
-			break
+#	while True:
+#		if(currentCommand.linear.x > 0):
+#			pub.publish(currentCommand)
+#			break
 #	if currentCommand.linear.x == 0.0 and currentCommand.angular.z == 0.0:
 #		break
-#	pub.publish(currentCommand)
-#	print(str(currentCommand))
+	pub.publish(targetCommand)
+	print(str(targetCommand))
 
 if __name__ == '__main__':
     constantCommand()
