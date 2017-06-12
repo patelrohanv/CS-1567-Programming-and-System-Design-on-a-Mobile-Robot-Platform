@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+import rospy
+import math
+from std_msgs.msg import Float32
+
+def callback(data):
+   # print "Listener heard" + str(math.fabs(data.data)) + "from the messanger."
+    number = 0.0
+    while True:
+        print number
+	if )
+number == data.data:
+                break
+        rate = rospy.Rate(10)
+        rate.sleep()
+
+	#if the number is greater than the input, subtract from it.
+	if number > data.data:
+		if math.fabs(data.data - number) < 0.01:
+			number = data.data
+		else:
+			number = number - 0.01
+	else:
+		if math.fabs(data.data - number) < 0.01:
+			number = data.data
+		else:
+			number = number + 0.01
+	#else if the number is less than the input, add to it.
+	
+    
+
+def listener():
+    rospy.init_node("listener", anonymous=True)
+    rospy.Subscriber("command", Float32, callback)
+    rospy.spin()
+
+if __name__ == '__main__':
+    listener()
