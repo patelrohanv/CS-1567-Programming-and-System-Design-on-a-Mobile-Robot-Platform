@@ -42,4 +42,29 @@ def forward():
 #	rospy.sleep(2.0)
 
 if __name__== '__main__':
-	forward()
+	mode = ''
+while(mode != '!q'):
+  mode = input('Select Mode ('1 for single, 2 for multiple, \':q\' to quit): ')
+  if(mode == 1):
+    command = input('Enter a command and press Enter to execute: ')
+    #split input into direction, angle, and distance
+    commands = command.split()
+    direction = commands[0]
+    distance = commands[1]
+    angle = commands[2]
+    #call method with params
+  if (mode == 2):
+    print("Enter \':q\' to quit")
+    command = ''
+    i = 0
+    matrix[0][0] = ''
+    while (command != ':q'):
+      command = input('Enter a command or \':q\' to quit: ')
+      #split input into direction, angle, and distance
+      commands = command.split()
+      matrix[i][0] = commands[0]
+      matrix[i][1] = commands[1]
+      matrix[i][2] = commands[2]
+      i += 1
+    #call method with params
+forward()
