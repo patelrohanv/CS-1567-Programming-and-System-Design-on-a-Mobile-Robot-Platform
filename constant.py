@@ -76,10 +76,9 @@ if __name__== '__main__':
 			c = cmd.split(', ')
 			for j in c:
 				commands = j.split()
-				print commands
-				matrix[i][0] = commands[0]
-				matrix[i][1] = commands[1]
-				matrix[i][2] = commands[2]
+				matrix[i].append(commands[0])
+				matrix[i].append(commands[1])
+				matrix[i].append(commands[2])
 				i += 1
 			#call method with params
 			for x in range (0, len(matrix)):
