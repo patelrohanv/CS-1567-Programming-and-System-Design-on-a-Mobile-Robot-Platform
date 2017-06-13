@@ -45,20 +45,49 @@ def odomCallback(data):
 
 	if(targetCommand.linear.y > 0):
     		if(x >= targetCommand.linear.y):
-			buttonGreen = False
+			targetCommand.linear.y = 0
 			targetCommand.linear.x = 0
+			targetCommand.angular.y = 0
+			targetCommand.angular.z = 0
 			pub.publish(targetCommand)
+			resetter()
 			print("thisisx: " + str(x) + "thisislineary:" + str(targetCommand.linear.y))
 	elif(targetCommand.linear.y < 0):
 		if(x <= targetCommand.linear.y):
-			buttonGreen = False
+			targetCommand.linear.y = 0
 			targetCommand.linear.x = 0
+			targetCommand.angular.y = 0
+			targetCommand.angular.z = 0
 			pub.publish(targetCommand)
-			print("same?")	
+			resetter()
+			print("same?")
+	if(targetCommand.angular.y > 0):
+		print("currentDegree: " + str(degree) + "targetCommand.angualr y: " + str(targetCommand.angular.y))
+		if(degree >= targetCommand.angular.y):
+			#buttonGreen = False
+			targetCommand.angular.y = 0
+			targetCommand.angular.z = 0
+			targetCommand.linear.y = 0
+			targetCommand.linear.z = 0
+			pub.publish(targetCommand)
+			resetter()
+			print("the most same")
+	if(targetCommand.angular.y < 0):
+		print("currentDegree: " + str(degree) + "targetCommand.angular y: " +  str(targetCommand.angular.y))
+		if(degree <= targetCommand.angular.y):
+			targetCommand.angular.y = 0
+			targetCommand.angular.z = 0
+			targetCommand.linear.y = 0
+			targetCommand.linear.z = 0
+			pub.publish(targetCommand)
+			resetter()
+			print("slightly almost mostsame")
+	
+	# angle y is how much we want to rotate.
 
 
     	msg = "(%.6f,%.6f) at %.6f degree." % (x, y, degree)
-  	rospy.loginfo(msg)
+#  	rospy.loginfo(msg)
 
 def updateCommand(data):
     global targetCommand
