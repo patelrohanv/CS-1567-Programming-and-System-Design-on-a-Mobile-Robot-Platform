@@ -72,16 +72,11 @@ def odomCallback(data):
 		if(targetCommand.angular.z == 0.0):
 			resetter()
 	if(targetCommand.angular.y > 0):
-		post = 0.0
-		if (targetCommand.angular.y > 180):
-			print "entered angle over 180"
-			post = targetCommand.angular.y - 180
 		print("currentDegree: " + str(degree) + "targetCommand.angualr y: " + str(targetCommand.angular.y))
-		if(post > 0.0 and degree > -180 and degree < -20):
-			print "past 180"
-			resetter()
-			targetCommand.angular.y = post
 		if(degree >= targetCommand.angular.y):
+			if(degree < 0):
+				targetCommand.angular.y -= 180
+				resetter()
 			#buttonGreen = False
 			targetCommand.angular.y = 0
 			targetCommand.angular.z = 0
@@ -93,12 +88,6 @@ def odomCallback(data):
 			print("the most same")
 	elif(targetCommand.angular.y < 0):
 		#print("currentDegree: " + str(degree) + "targetCommand.angular y: " +  str(targetCommand.angular.y))
-		post = 0.0
-		if (targetCommand.angular.y < -180):
-			post = targetCommand.angular.y + 180
-		if (post < 0.0 and degree < 180 and degree > 20):
-			resetter()
-			targetCommand.angular.y = post
 		if(degree <= targetCommand.angular.y):
 			targetCommand.angular.y = 0
 			targetCommand.angular.z = 0
