@@ -35,13 +35,13 @@ def forward(one, two, three):
 		command.angular.z = 0.0
 		command.angular.y = 0.0
 	elif(one.lower() == "r"):
-		command.angular.z = float(two)
-		command.angular.y = float(three) - 2.0
+		command.angular.z = float(two) * -1.0
+		command.angular.y = (float(three)* -1.0) - 2.0
 		command.linear.x = 0.0
 		command.linear.y = 0.0
 	elif(one.lower() == "l"):
-		command.angular.z = float(two) * -1
-		command.angular.y = (float(three) * -1) + 2.0
+		command.angular.z = float(two)
+		command.angular.y = float(three) + 2.0
 		command.linear.x = 0.0
 		command.linear.y = 0.0
 	pub.publish(command)

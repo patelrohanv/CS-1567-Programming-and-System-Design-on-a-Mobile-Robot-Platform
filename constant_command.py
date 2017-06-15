@@ -198,27 +198,50 @@ def constantCommand():
 		targetCommand.linear.z = 0.0
 		print("stillWRong")
 	if buttonGreen == True:
+		forward = True
+		if targetCommand.linear.y < 0.0:
+			forward = False
 		currentCommand.linear.y = targetCommand.linear.y
 		currentCommand.angular.z = targetCommand.angular.z
 		currentCommand.angular.y = targetCommand.angular.y
 		#this is where i will have to calculate speed.
 		# x is global current distance.
-		halfDistance = targetCommand.linear.y / 2
+		quarterDistance = targetCommand.linear.y / 4.0
+		halfDistance = targetCommand.linear.y / 2.0
+		threeQuarterDistance = quarterDistance + halfDistance
 		quarterSpeed = targetCommand.linear.x * .08
+		if (quarterDistance != 0):
+			partialSpeed = targetCommand.linear.x * quarterDistance
 		
-		if(x < (targetCommand.linear.y )):
-			if(targetCommand.linear.x != 0):
-				if(x < halfDistance):
-					currentCommand.linear.x += quarterSpeed
-				else:
-					currentCommand.linear.x -= quarterSpeed
-		elif(x > (targetCommand.linear.y)):
-			if(targetCommand.linear.x != 0):
-				print("goingbackwards")
-				if(x < halfDistance):
-					currentCommand.linear.x += (quarterSpeed * -1.0)
-				else:
-					currentCommand.linear.x -= (quarterSpeed * -1.0)
+		if (x < targetCommand.linear.y and targetCommand.linear.y > 0.0 and forward):
+			if(targetCommand.linear.y != 0):
+				if ( x < quarterDistance):
+					currentCommand.linear.x += partialSpeed
+				elif (x > quarterDistance and x < threeQuarterDistance):
+					currentCommand.linear.x = targetCommand.linear.x
+				elif ( x > threeQuarterDistance):
+					currentCommand.linear.x -= partialSpeed
+		elif (x > targetCommand.linear.y and targetCommand.linear.y < 0.0 and not forward):
+			if(targetCommand.linear.y != 0):
+				if ( x > quarterDistance):
+                                        currentCommand.linear.x += (partialSpeed * -1.0)
+                                elif (x < quarterDistance and x > threeQuarterDistance):
+                                        currentCommand.linear.x = targetCommand.linear.x
+                                elif ( x < threeQuarterDistance):
+                                        currentCommand.linear.x -= (partialSpeed * -1.0)
+		#if(x < (targetCommand.linear.y )):
+		#	if(targetCommand.linear.x != 0):
+		#		if(x < halfDistance):
+		#			currentCommand.linear.x += quarterSpeed
+		#		else:
+		#			currentCommand.linear.x -= quarterSpeed
+		#elif(x > (targetCommand.linear.y)):
+		#	if(targetCommand.linear.x != 0):
+		#		print("goingbackwards")
+		#		if(x < halfDistance):
+		#			currentCommand.linear.x += (quarterSpeed * -1.0)
+		#		else:
+		#			currentCommand.linear.x -= (quarterSpeed * -1.0)
 		else:
 			targetCommand.linear.x = 0
 			targetCommand.linear.y = 0
