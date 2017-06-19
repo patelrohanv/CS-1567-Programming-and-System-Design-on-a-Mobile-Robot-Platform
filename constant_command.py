@@ -55,6 +55,8 @@ def odomCallback(data):
 			pub.publish(targetCommand)
 			resetter()
 			print("thisisx: " + str(x) + "thisislineary:" + str(targetCommand.linear.y))
+		else:
+			print("continue1")
 	elif(targetCommand.linear.y < 0):
 		if(x <= targetCommand.linear.y):
 			targetCommand.linear.y = 0
@@ -69,6 +71,7 @@ def odomCallback(data):
 		targetCommand.linear.y = 0
 		targetCommand.linear.x = 0
 		pub.publish(targetCommand)
+		#print("the final else")
 		if(targetCommand.angular.z == 0.0):
 			resetter()
 	if(targetCommand.angular.y > 0):
@@ -76,7 +79,6 @@ def odomCallback(data):
 		if (targetCommand.angular.y > 180):
 			print "entered angle over 180"
 			post = targetCommand.angular.y - 180
-		print("currentDegree: " + str(degree) + "targetCommand.angualr y: " + str(targetCommand.angular.y))
 		if(post > 0.0 and degree > -180 and degree < -20):
 			print "past 180"
 			resetter()
@@ -92,11 +94,15 @@ def odomCallback(data):
 			#resetter()
 			print("the most same")
 	elif(targetCommand.angular.y < 0):
+		print("this is target line: " + str(targetCommand.angular.y))
+                print("this is current rotate: " + str(degree))
 		#print("currentDegree: " + str(degree) + "targetCommand.angular y: " +  str(targetCommand.angular.y))
 		post = 0.0
 		if (targetCommand.angular.y < -180):
 			post = targetCommand.angular.y + 180
+			print("what even is this either")
 		if (post < 0.0 and degree < 180 and degree > 20):
+			print("why are we in here")
 			resetter()
 			targetCommand.angular.y = post
 		if(degree <= targetCommand.angular.y):
@@ -113,7 +119,7 @@ def odomCallback(data):
 
 
     	msg = "(%.6f,%.6f) at %.6f degree." % (x, y, degree)
-#  	rospy.loginfo(msg)
+  	rospy.loginfo(msg)
 
 def updateCommand(data):
     global targetCommand
@@ -220,6 +226,7 @@ def constantCommand():
 				elif (x > quarterDistance and x < threeQuarterDistance):
 					currentCommand.linear.x = targetCommand.linear.x
 				elif ( x > threeQuarterDistance):
+					print("currentComandLineax: " +  str(currentCommand.linear.x) + " partialSpeed: " + str(partialSpeed) + " x: " + str(x))
 					currentCommand.linear.x -= partialSpeed
 		elif (x > targetCommand.linear.y and targetCommand.linear.y < 0.0 and not forward):
 			if(targetCommand.linear.y != 0):
@@ -228,6 +235,7 @@ def constantCommand():
                                 elif (x < quarterDistance and x > threeQuarterDistance):
                                         currentCommand.linear.x = targetCommand.linear.x
                                 elif ( x < threeQuarterDistance):
+					print("currentComandLineax: " +  str(currentCommand.linear.x) + " partialSpeed: " + str(partialSpeed) + " x: " + str(x))					
                                         currentCommand.linear.x -= (partialSpeed * -1.0)
 		#if(x < (targetCommand.linear.y )):
 		#	if(targetCommand.linear.x != 0):
@@ -255,6 +263,7 @@ def constantCommand():
 #		print("currentCommandLinearX: " + str(targetCommand.linear.x))
 #		print("currentCommandLinear.y" + str(targetCommand.linear.y))
 	else:
+		print("shoudlnebethere")
 		tempCommand = targetCommand
 		tempCommand.linear.x = 0.0	
 		tempCommand.linear.y = 0.0

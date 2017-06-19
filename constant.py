@@ -44,8 +44,9 @@ def forward(one, two, three):
 		command.angular.y = float(three) + 2.0
 		command.linear.x = 0.0
 		command.linear.y = 0.0
+	print("published command:" + str(command))
 	pub.publish(command)
-	rospy.sleep(2.0)
+	rospy.sleep(4.0)
 #	rospy.sleep(2.0)
 #	command.linear.x = -0.3
 #	command.angular.z = 0.0
