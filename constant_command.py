@@ -197,6 +197,9 @@ def constantCommand():
 
 
     while not rospy.is_shutdown():
+	if(targetCommand.angular.x > 0):
+		targetCommand.angular.x = 0
+		resetter()
 	if(targetCommand.linear.z == 1.0):
 		buttonGreen = False
 		led.value = 3
