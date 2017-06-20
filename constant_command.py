@@ -227,16 +227,18 @@ def constantCommand():
 					currentCommand.linear.x = targetCommand.linear.x
 				elif ( x > threeQuarterDistance):
 					print("currentComandLineax: " +  str(currentCommand.linear.x) + " partialSpeed: " + str(partialSpeed) + " x: " + str(x))
-					currentCommand.linear.x -= partialSpeed
+					if(partialSpeed < currentCommand.linear.x):
+						currentCommand.linear.x -= partialSpeed
 		elif (x > targetCommand.linear.y and targetCommand.linear.y < 0.0 and not forward):
 			if(targetCommand.linear.y != 0):
 				if ( x > quarterDistance):
-                                        currentCommand.linear.x += (partialSpeed * -1.0)
+                                       	currentCommand.linear.x += (partialSpeed * -1.0)
                                 elif (x < quarterDistance and x > threeQuarterDistance):
                                         currentCommand.linear.x = targetCommand.linear.x
                                 elif ( x < threeQuarterDistance):
-					print("currentComandLineax: " +  str(currentCommand.linear.x) + " partialSpeed: " + str(partialSpeed) + " x: " + str(x))					
-                                        currentCommand.linear.x -= (partialSpeed * -1.0)
+					print("currentComandLineax: " +  str(currentCommand.linear.x) + " partialSpeed: " + str(partialSpeed) + " x: " + str(x))
+					if(partialSpeed > (currentCommand.linear.x * -1.0)):
+						currentCommand.linear.x -= (partialSpeed * -1.0)
 		#if(x < (targetCommand.linear.y )):
 		#	if(targetCommand.linear.x != 0):
 		#		if(x < halfDistance):
