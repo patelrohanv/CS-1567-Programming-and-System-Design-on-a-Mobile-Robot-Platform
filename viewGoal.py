@@ -14,6 +14,8 @@ from cmvision.msg import Blobs, Blob
 import math
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
+from std_msgs.msg import Empty
+
 
 colorImage = Image()
 isColorImageReady = False
@@ -25,6 +27,14 @@ bumper = True
 pub1 = rospy.Publisher('/mobile_base/commands/led1', Led, queue_size=10)
 pub2 = rospy.Publisher('/mobile_base/commands/led2', Led, queue_size=10)
 led = Led()
+x = 0.0
+y = 0.0
+degree = 0.0
+firstRedBall = 0.0
+firstSame = 0.0
+
+#step number = which step we are trying to solve / angles we need to get.
+stepNumber = 0
 
 def resetter():
         pub = rospy.Publisher('/mobile_base/commands/reset_odometry', Empty,
@@ -33,6 +43,24 @@ def resetter():
                 pass
         pub.publish(Empty())
 
+def odomCallback(data):
+        global command, bumper, pub, x , y, degree
+           # Convert quaternion to degree
+        q = [data.pose.pose.orientation.x,
+                data.pose.pose.orientation.y,
+                data.pose.pose.orientation.z,
+                data.pose.pose.orientation.w]
+        roll, pitch, yaw = euler_from_quaternion(q)
+        # roll, pitch, and yaw are in radian
+        degree = yaw * 180 / math.pi
+        x = data.pose.pose.position.x
+        y = data.pose.pose.position.y
+	
+	# First step, trying to get the angle from the start position before we move 1.5 meters
+	if(stepNumber == 0):
+		same = 5
+	msg = "(%.6f,%.6f) at %.6f degree." % (x, y, degree)
+        rospy.loginfo(msg)
 
 def bumperCallback(data):
     global pub, command, bumper, led
@@ -87,7 +115,7 @@ def updateBlobsInfo(data):
     isBlobsInfoReady = True
 
 def main():
-    global colorImage, led,  isColorImageReady, blobsInfo, isBlobsInfoReady, pub, bumper, command, pub1
+    global colorImage, led,  isColorImageReady, blobsInfo, isBlobsInfoReady, pub, bumper, command, pub1, x, y, degree, stepNumber, firstRedBall, firstSame
     rospy.init_node('showBlobs', anonymous=True)
     rospy.Subscriber("/blobs", Blobs, updateBlobsInfo)
     rospy.Subscriber("/v4l/camera/image_raw", Image, updateColorImage)
@@ -95,7 +123,9 @@ def main():
     rospy.Subscriber('/mobile_base/events/button', ButtonEvent, buttonCallback)
     bridge = CvBridge()
     cv2.namedWindow("Blob Location")
+    rospy.Subscriber('/odom', Odometry, odomCallback)
 
+    resetter()
     while not rospy.is_shutdown() and (not isBlobsInfoReady or not isColorImageReady):
         pass
 
@@ -108,7 +138,8 @@ def main():
         except CvBridgeError, e:
             print e
             print "colorImage"
-
+	secondRotate = 0.0
+#	resetter()
 	if(bumper != False):
 		led.value = 1
 		pub1.publish(led)
@@ -131,48 +162,76 @@ def main():
 		
 			
 			#print(str(cv2.rectangle))
-		if(largestBlob != None):
-			
-			if(largestBlob.x < lowestMiddleVar):
-				errorNumber = lowestMiddleVar - largestBlob.x
-				outputNumber = .04 * errorNumber
-				if(outputNumber > 1.0):
-					outputNumber = 1.0
-				command.linear.x = 0.2
-				command.linear.y = 0.3
-				command.angular.y = 0.2
-				command.angular.z = outputNumber
-				pub.publish(command)
-			elif(largestBlob.x > highestMiddleVar):
-			        errorNumber = largestBlob.x - highestMiddleVar
-                                outputNumber = .04 * errorNumber
-				outputNumber = outputNumber * -1.0
-                                if(outputNumber < -1.0):
-                                        outputNumber = -1.0
-				command.linear.x = 0.2
-				command.linear.y = 0.3
-				command.angular.y = -0.2
-				command.angular.z = outputNumber
-
-				pub.publish(command)
-			elif(largestBlob.x >= lowestMiddleVar and largestBlob.x <= highestMiddleVar):
-				command.linear.x = 0.2
-				command.linear.y = 0.3
+		if(firstRedBall == 0.0):
+			if(largestBlob != None):	
+				if(largestBlob.x < lowestMiddleVar):
+					errorNumber = lowestMiddleVar - largestBlob.x
+					outputNumber = .04 * errorNumber
+					if(outputNumber > 1.0):
+						outputNumber = 1.0
+					command.linear.x = 0.0
+					command.linear.y = 0.0
+					command.angular.y = 0.2
+					command.angular.z = outputNumber
+					pub.publish(command)
+				elif(largestBlob.x > highestMiddleVar):
+			        	errorNumber = largestBlob.x - highestMiddleVar
+                                	outputNumber = .04 * errorNumber
+					outputNumber = outputNumber * -1.0
+                                	if(outputNumber < -1.0):
+                                        	outputNumber = -1.0
+					command.linear.x = 0.0
+					command.linear.y = 0.0
+					command.angular.y = -0.2
+					command.angular.z = outputNumber
+					pub.publish(command)
+				elif(largestBlob.x >= lowestMiddleVar and largestBlob.x <= highestMiddleVar):
+					command.linear.x = 0.0
+					command.linear.y = 0.0
+					command.angular.y = 0.0
+					command.angular.z = 0.0
+					pub.publish(command)
+					firstRedBall = degree
+					resetter()
+					print(str(largestBlob.x))
+					print(str(degree))
+				#print(largestBlob)
+				#print bumper
+			else:
+				print("no large blob")
+				#bumper = False
+				led.value = 1
+				pub1.publish(led) 
+				command.linear.x = 0.0
+				command.linear.y = 0.0
 				command.angular.y = 0.0
 				command.angular.z = 0.0
-				pub.publish(command)
-			#print(largestBlob)
-			#print bumper
+        			pub.publish(command)
 		else:
-			print("no large blob")
-			bumper = False
-			led.value = 1
-			pub1.publish(led) 
-			command.linear.x = 0.0
-			command.linear.y = 0.0
-			command.angular.y = 0.0
-			command.angular.z = 0.0
-        		pub.publish(command)
+			#if the red ball has already been collected, (first time)
+			if(firstSame == 0.0 and secondRotate == 0.0):
+				rotateAmount = firstRedBall + 90.0
+			 	if(rotateAmount > 180.0):
+					rotateAmount - 180.0
+				elif(rotateAmount < 180.0):
+					rotateAmount + 180.0
+				if(degree < rotateAmount):
+					command.angular.y = -20
+					command.angular.z = -0.7 
+					pub.publish(command)
+					#firstSame = 1.0
+					#rospy.sleep(2.0)
+					print("currentdegree: " + str(degree) + " firstRedBall + 90.0 " + str(firstRedBall + 90.0)) 
+				else:
+					command.angular.y = 0.0
+					command.angular.z = 0.0
+					pub.publish(command)
+					secondRotate = 1.0
+					firstSame = 1.0
+					
+			#bumper = False
+			#rospy.sleep(1.0)
+			#bumper = False
 	else:
 		command.linear.x = 0.0
 		command.linear.y = 0.0
@@ -182,6 +241,11 @@ def main():
 	cv2.imshow("Color Image", color_image)
         cv2.waitKey(1)
 #	print("bumper:" + str(bumper))
+def findX(N, alpha, theta, phi):
+	b = N * math.tan(theta)
+	a = N * math.tan(theta + phi) - N * math.tan(theta)
+	x = (a+b) / (tan(90-alpha))
+
 
 if __name__ == '__main__':
     main()

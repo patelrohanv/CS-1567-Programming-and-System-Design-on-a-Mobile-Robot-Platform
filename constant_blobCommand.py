@@ -89,11 +89,11 @@ def constantCommand():
 		#print(str(targetCommand))
 	else:
 		tempCommand = targetCommand
-		tempCommand.linear.x = 0.0	
+		tempCommand.linear.x = 0.0
 		tempCommand.angular.z = 0.0
 		pub.publish(tempCommand)
 		#print(str(tempCommand))
 	rospy.sleep(0.1)
 
 if __name__ == '__main__':
-	constantCommand()
+    constantCommand()
