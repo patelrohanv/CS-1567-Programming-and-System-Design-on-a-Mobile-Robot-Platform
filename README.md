@@ -1,2 +1,2 @@
-# cs1656
-Repo for CS 1656
+# CS 1567
+Repo for CS 1567 – Programming and System Design on a Mobile Robot Platform
