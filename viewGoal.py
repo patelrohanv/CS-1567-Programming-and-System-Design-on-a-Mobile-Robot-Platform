@@ -32,6 +32,10 @@ y = 0.0
 degree = 0.0
 firstRedBall = 0.0
 firstSame = 0.0
+firstTimeMoveLeft = 0.0
+secondRedBall = 0.0
+goalAngle = 0.0
+largestLargestPinkBlob = None
 
 #step number = which step we are trying to solve / angles we need to get.
 stepNumber = 0
@@ -114,8 +118,32 @@ def updateBlobsInfo(data):
     blobsInfo = data
     isBlobsInfoReady = True
 
+def getLargestPinkBlob(blobsCopy):
+        for b in blobsCopy.blobs:
+		if (b.name != "BrightPink"):
+			continue
+                cv2.rectangle(color_image, (b.left, b.top), (b.right, b.bottom), (0,255,0), 2)
+                if(largestBlob == None):
+                        largestBlob = b
+                        largestBlobSize = b.right - b.left
+                elif((b.right - b.left) > largestBlobSize):
+                        largestBlob = b
+	return largestBlob
+
+def getRedBlob(blobsCopy):
+	for b in blobsCopy.blobs:
+		if (b.name != "Red"):
+			continue
+		cv2.rectangle(color_image, (b.left, b.top), (b.right, b.bottom), (0,255,0), 2)
+		if(largestBlob == None):
+			largestBlob = b
+			largestBlobSize = b.right - b.left
+		elif((b.right - b.left) > largestBlobSize):
+			largestBlob = b
+	return largestBlob		
+
 def main():
-    global colorImage, led,  isColorImageReady, blobsInfo, isBlobsInfoReady, pub, bumper, command, pub1, x, y, degree, stepNumber, firstRedBall, firstSame
+    global colorImage, led, isColorImageReady,firstTimeMoveLeft,secondRedBall, blobsInfo, isBlobsInfoReady, pub, bumper, command, pub1, x, y, degree, stepNumber, firstRedBall, firstSame, goalAngle
     rospy.init_node('showBlobs', anonymous=True)
     rospy.Subscriber("/blobs", Blobs, updateBlobsInfo)
     rospy.Subscriber("/v4l/camera/image_raw", Image, updateColorImage)
@@ -124,7 +152,7 @@ def main():
     bridge = CvBridge()
     cv2.namedWindow("Blob Location")
     rospy.Subscriber('/odom', Odometry, odomCallback)
-
+    secondRotate = 0.0
     resetter()
     while not rospy.is_shutdown() and (not isBlobsInfoReady or not isColorImageReady):
         pass
@@ -138,7 +166,7 @@ def main():
         except CvBridgeError, e:
             print e
             print "colorImage"
-	secondRotate = 0.0
+	#secondRotate = 0.0
 #	resetter()
 	if(bumper != False):
 		led.value = 1
@@ -146,19 +174,28 @@ def main():
         	blobsCopy = copy.deepcopy(blobsInfo)
 		height = blobsCopy.image_height
 		width = blobsCopy.image_width
-		lowestMiddleVar = (width/2) - 50
-		highestMiddleVar = (width/2) + 50
+		lowestMiddleVar = (width/2) - 20
+		highestMiddleVar = (width/2) + 20
 #		print(blobsCopy)
 		largestBlob = None
 		largestBlobSize = 0
+		largestBlobPink = None
+		largestBlobPinkSize = 0
 
 		for b in blobsCopy.blobs:
 			cv2.rectangle(color_image, (b.left, b.top), (b.right, b.bottom), (0,255,0), 2)
-			if(largestBlob == None):
-				largestBlob = b
-				largestBlobSize = b.right - b.left
-			elif((b.right - b.left) > largestBlobSize):
-				largestBlog = b
+			if (b.name == "Red"):
+				if(largestBlob == None):
+					largestBlob = b
+					largestBlobSize = b.right - b.left
+				elif((b.right - b.left) > largestBlobSize):
+					largestBlob = b
+			if(b.name == "BrightPink"):
+				if(largestBlobPink == None):
+					largestBlobPink = b
+					largestBlobPinkSize = b.right - b.left
+				elif((b.right - b.left) > largestBlobPinkSize):
+					largestBlobPink = b
 		
 			
 			#print(str(cv2.rectangle))
@@ -212,12 +249,14 @@ def main():
 			if(firstSame == 0.0 and secondRotate == 0.0):
 				rotateAmount = firstRedBall + 90.0
 			 	if(rotateAmount > 180.0):
-					rotateAmount - 180.0
+					same = 5
+					#rotateAmount - 180.0
 				elif(rotateAmount < 180.0):
-					rotateAmount + 180.0
+					same = 5
+					#rotateAmount + 180.0
 				if(degree < rotateAmount):
-					command.angular.y = -20
-					command.angular.z = -0.7 
+					command.angular.y = 20
+					command.angular.z = 0.7 
 					pub.publish(command)
 					#firstSame = 1.0
 					#rospy.sleep(2.0)
@@ -228,7 +267,129 @@ def main():
 					pub.publish(command)
 					secondRotate = 1.0
 					firstSame = 1.0
-					
+			elif(secondRotate == 1.0):
+				#print("firstTimemoveleft:" + str(firstTimeMoveLeft))
+				if(firstTimeMoveLeft == 0.0):
+					if(x < 1.0):
+						command.linear.x = 0.3
+						command.linear.y = 1.0
+						pub.publish(command)
+						rospy.sleep(4.0)
+						command.linear.x = 0.0
+						command.linear.y = 0.0
+						pub.publish(command)
+						rospy.sleep(3.0)
+						command.angular.y = -90.0
+						command.angular.z = -0.7
+						pub.publish(command)
+						rospy.sleep(3.0)
+						firstTimeMoveLeft = 1.0
+						resetter()
+					else:
+						print("x is > 1.0")
+					# we now have moved to the left 1 meter.
+				else:
+					 print("firstRedBall" + str(firstRedBall))
+					 print("secondRedBall" + str(secondRedBall))
+					 if(secondRedBall == 0.0):
+						# find goal
+						# find ball
+						# subtract ball angle from goal angle
+                        			if(largestBlob != None):
+                                			if(largestBlob.x < lowestMiddleVar):
+                                        			errorNumber2 = lowestMiddleVar - largestBlob.x
+                                        			outputNumber2 = .04 * errorNumber2
+                                        			if(outputNumber2 > 1.0):
+                                                			outputNumber2 = 1.0
+                                        			command.linear.x = 0.0
+                                        			command.linear.y = 0.0
+                                        			command.angular.y = 0.2
+                                        			command.angular.z = outputNumber2
+                                        			pub.publish(command)
+                                			elif(largestBlob.x > highestMiddleVar):
+                                        			errorNumber2 = largestBlob.x - highestMiddleVar
+                                        			outputNumber2 = .04 * errorNumber2
+                                        			outputNumber2 = outputNumber2 * -1.0
+                                        			if(outputNumber2 < -1.0):
+                                                			outputNumber2 = -1.0
+                                        			command.linear.x = 0.0
+                                        			command.linear.y = 0.0
+                                        			command.angular.y = -0.2
+                                        			command.angular.z = outputNumber2
+                                        			pub.publish(command)
+							elif(largestBlob.x >= lowestMiddleVar and largestBlob.x <= highestMiddleVar):
+								command.linear.x = 0.0
+								command.linear.y = 0.0
+								command.angular.y = 0.0
+								command.angular.z = 0.0
+								pub.publish(command)
+								secondRedBall = degree
+								resetter()
+								#getting angle between the goal and ball
+			                                        #print("goalAngle" + str(goalAngle))
+                                                else:
+                                                	print("no large blob")
+                                                        #bumper = False
+                                                        led.value = 1
+                                                        pub1.publish(led)
+                                                        command.linear.x = 0.0
+                                                        command.linear.y = 0.0
+                                                        command.angular.y = -5.0
+                                                        command.angular.z = -0.5
+                                                        pub.publish(command)
+                                                        # blobs.name
+                        		
+			                 else:
+						#if you got the second red ball, get the goal angle
+						#TODO, we need to do a full scan to find the largest pink blob.
+						print("goalAngle:" + str(goalAngle))
+						if(goalAngle == 0.0):
+                                                	if(largestBlobPink != None):
+			                        		if(largestBlobPink.x < lowestMiddleVar):
+                        			        		errorNumber3 = lowestMiddleVar - largestBlobPink.x
+                                                			outputNumber3 = .04 * errorNumber3
+                                                                	if(outputNumber3 > 1.0):
+                                                                		outputNumber3 = 1.0
+                                                                	command.linear.x = 0.0
+                                                                	command.linear.y = 0.0
+                                                               		command.angular.y = 0.2
+                                                               		command.angular.z = outputNumber3
+                                                                	pub.publish(command)
+                                                        	elif(largestBlobPink.x > highestMiddleVar):
+                                                        		errorNumber3 = largestBlobPink.x - highestMiddleVar
+                                                             		outputNumber3 = .04 * errorNumber2
+                                                               		outputNumber3 = outputNumber3 * -1.0
+                                                                	if(outputNumber3 < -1.0):
+                                                                		outputNumber3 = -1.0
+                                                                	command.linear.x = 0.0
+                                                               		command.linear.y = 0.0
+                                                                	command.angular.y = -0.2
+                                                                	command.angular.z = outputNumber3
+                                                                	pub.publish(command)
+                                                        	elif(largestBlobPink.x >= lowestMiddleVar and largestBlobPink.x <= highestMiddleVar):
+                                                        		command.linear.x = 0.0
+                                                                	command.linear.y = 0.0
+                                                                	command.angular.y = 0.0
+                                                                	command.angular.z = 0.0
+                                                                	pub.publish(command)
+                                                                	goalAngle = degree
+                                                                	resetter()
+									print("we got the goal")
+									#end getting goalAngle
+							else:
+                                				print("no large blob")
+                                				#bumper = False
+                                				led.value = 1
+                               					pub1.publish(led)
+                                				command.linear.x = 0.0
+                                				command.linear.y = 0.0
+                                				command.angular.y = 0.0
+                                				command.angular.z = 0.0
+                                				pub.publish(command)
+								# blobs.name	
+
+
+		
 			#bumper = False
 			#rospy.sleep(1.0)
 			#bumper = False
@@ -241,10 +402,35 @@ def main():
 	cv2.imshow("Color Image", color_image)
         cv2.waitKey(1)
 #	print("bumper:" + str(bumper))
-def findX(N, alpha, theta, phi):
-	b = N * math.tan(theta)
-	a = N * math.tan(theta + phi) - N * math.tan(theta)
-	x = (a+b) / (tan(90-alpha))
+
+### START DOC FOR MATH
+
+# alpha is the angle between zero and the ball when at the starting point
+# N is the distance travelled from the starting point
+# theta is the angle between zero and the ball after travelling N
+# phi is the angle between the ball and goal after travelling N 
+# x is the distance that needs to be travelled from the starting point to kick the ball
+def getB (N, theta):
+        b = N * math.tan(theta)
+        return b
+
+def getA (N, theta, phi):
+        a = N * math.tan(theta + phi) - N * math.tan(theta)
+        return a
+
+def setupKick (N, firstBall, secondBall, goal):
+        # convert theta and phi to radians
+        alpha = math.radians(firstBall)
+        theta = math.radians(secondBall)
+        phi = math.radians(goal)
+
+        b = getB(N, theta)
+        a = getA(N, theta, phi)
+        x = (a+b) / (tan(90-alpha))
+
+        return (N + x) #distance that needs to be travelled to kick the ball
+
+### END DOC FOR MATH
 
 
 if __name__ == '__main__':

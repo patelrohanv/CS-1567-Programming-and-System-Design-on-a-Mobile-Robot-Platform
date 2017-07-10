@@ -122,6 +122,9 @@ def main():
 		largestBlobSize = 0
 
 		for b in blobsCopy.blobs:
+			if b.name !=  "BrightGreen":
+				print("largestBlob is not bright green")
+				continue
 			cv2.rectangle(color_image, (b.left, b.top), (b.right, b.bottom), (0,255,0), 2)
 			if(largestBlob == None):
 				largestBlob = b
@@ -132,8 +135,18 @@ def main():
 			
 			#print(str(cv2.rectangle))
 		if(largestBlob != None):
+			print("we have a largestBlob")
+			if(str(largestBlob.name) != "BrightGreen"):
+				print("largestBlob is not bright green")
+				#print("this is largets blob name:" + str(largestBlob.name))
+				command.linear.x = 0.0
+				command.linear.y = 0.0
+				command.angular.z = 0.0
+				command.angular.y = 0.0
+				print "no more green"
 			
-			if(largestBlob.x < lowestMiddleVar):
+			elif(largestBlob.x < lowestMiddleVar):
+				print("largestblob is bright green")
 				errorNumber = lowestMiddleVar - largestBlob.x
 				outputNumber = .04 * errorNumber
 				if(outputNumber > 1.0):
@@ -166,6 +179,7 @@ def main():
 		else:
 			print("no large blob")
 			bumper = False
+			
 			led.value = 1
 			pub1.publish(led) 
 			command.linear.x = 0.0

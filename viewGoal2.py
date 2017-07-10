@@ -154,7 +154,7 @@ def getB (N, theta):
 	b = N * math.tan(theta)
 	return b
 
-def getA (N, theta, phi)
+def getA (N, theta, phi):
 	a = N * math.tan(theta + phi) - N * math.tan(theta)
 	return a
 
