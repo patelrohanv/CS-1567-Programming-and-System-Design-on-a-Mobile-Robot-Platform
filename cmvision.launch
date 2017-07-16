@@ -19,6 +19,6 @@
   <!-- Color bandwidth: Bigger = smoother image-->
   <param name="cmvision/color_radius_pix" type="double" value="40.0"/>
 
-  <node name="cmvision" pkg="cmvision" type="cmvision" args="image:=/v4l/camera/image_raw" 
+  <node name="cmvision" pkg="cmvision" type="cmvision" args="image:=/camera/rgb/image_color" 
         output="screen" />
 </launch>
