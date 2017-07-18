@@ -12,12 +12,7 @@ from kobuki_msgs.msg import BumperEvent
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
-from cmvision.msg import Blobs, Blob
-from struct import unpack
-import copy
 
-blobsInfo = Blobs()
-isBlobsInfoReady = False
 depthImage = Image()
 isDepthImageReady = False;
 colorImage = Image()
@@ -88,35 +83,18 @@ def buttonCallback(data):
                 str = str + "pressed."
         rospy.loginfo(str)
 
-def updateColorImage(data):
-    global colorImage, isColorImageReady
-    colorImage = data
-    isColorImageReady = True
-
-def updateBlobsInfo(data):
-    global blobsInfo, isBlobsInfoReady
-    blobsInfo = data
-    isBlobsInfoReady = True
 
 def main():
-    global depthImage, isDepthImageReady, colorImage, isColorImageReady, xLocation, yLocation, blobsInfo, isBlobsInfoReady
+    global depthImage, isDepthImageReady, colorImage, isColorImageReady, xLocation, yLocation
     rospy.init_node('image_converter', anonymous=True)
-    #rospy.init_node('showBlobs', anonymous=True)
-    rospy.Subscriber("/blobs", Blobs, updateBlobsInfo)
     rospy.Subscriber("/camera/depth/image", Image, updateDepthImage, queue_size=10)
     rospy.Subscriber("/camera/rgb/image_color", Image, updateColorImage, queue_size=10)
     bridge = CvBridge()
     cv2.namedWindow("Color Image")
     cv2.setMouseCallback("Color Image", mouseClick)
 
-    while not isColorImageReady:
-	print("were passing colorImage")
+    while not isDepthImageReady or not isColorImageReady:
         pass
-
-    while not isDepthImageReady:
-	print("were passing depthImage")
-        pass
-
 
     while not rospy.is_shutdown():
         try:
@@ -131,37 +109,13 @@ def main():
             print e
             print "colorImage"
         
-	blobsCopy = copy.deepcopy(blobsInfo)
-	height = blobsCopy.image_height
-	width = blobsCopy.image_width
-	largestBlob = None
-	largestBlobSize = 0
         depthValue = depth.item(yLocation,xLocation,0)
-	for b in blobsCopy.blobs:
-		if b.name !=  "LightBlue":
-			print("largestBlob is not bright green")
-			continue
-		cv2.rectangle(color_image, (b.left, b.top), (b.right, b.bottom), (0,255,0), 2)
-		if(largestBlob == None):
-			largestBlob = b
-			largestBlobSize = b.right - b.left
-		elif((b.right - b.left) > largestBlobSize):
-			largestBlob = b
-	if (largestBlob != None):
-		xLocation = largestBlob.x
-		yLocation = largestBlob.y
-	else:
-		print "No largest blob"
-		command.linear.x = 0.0
-		command.linear.y = 0.0
-		pub.publish(command)
-		continue
+
         print "Depth at (%i,%i) is %f." % (xLocation,yLocation,depthValue)
 	print color_image
 
 	command.linear.x = 0.4
 	command.linear.y = 0.3
-	if(depthValue < 0.5 or math.isnan(depthValue)):
 		command.linear.x = 0.0
 		command.linear.y = 0.0
 	elif(depthValue > 1.1):
@@ -171,26 +125,6 @@ def main():
 		#slow down
 		command.linear.x -= 0.2
 	
-	if(xLocation < lowestMiddleVar):
-		 print("largestblob is bright green")
-                 errorNumber = lowestMiddleVar - largestBlob.x
-                 outputNumber = .04 * errorNumber
-                 if(outputNumber > 1.0):
-                 	outputNumber = 1.0
-                 command.angular.y = 0.2
-                 command.angular.z = outputNumber
-	elif(xLocation > highestMiddleVar):
-         	errorNumber = largestBlob.x - highestMiddleVar
-                outputNumber = .04 * errorNumber
-                outputNumber = outputNumber * -1.0
-                if(outputNumber < -1.0):
-                	outputNumber = -1.0
-                command.angular.y = -0.2
-                command.angular.z = outputNumber
-        elif(xLocation >= lowestMiddleVar and xLocation <= highestMiddleVar):                                
-                command.angular.y = 0.0
-                command.angular.z = 0.0
-
 	pub.publish(command)
         depthStr = "%.2f" % depthValue
 
