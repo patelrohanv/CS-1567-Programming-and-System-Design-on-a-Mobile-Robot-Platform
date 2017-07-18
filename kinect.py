@@ -134,6 +134,8 @@ def main():
 	blobsCopy = copy.deepcopy(blobsInfo)
 	height = blobsCopy.image_height
 	width = blobsCopy.image_width
+	lowestMiddleVar = (width/2) - 50
+	highestMiddleVar = (width/2) + 50
 	largestBlob = None
 	largestBlobSize = 0
         depthValue = depth.item(yLocation,xLocation,0)
