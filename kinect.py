@@ -156,6 +156,8 @@ def main():
 		print "No largest blob"
 		command.linear.x = 0.0
 		command.linear.y = 0.0
+		command.angular.y = 0.0
+		command.angular.z = 0.0
 		pub.publish(command)
 		continue
         print "Depth at (%i,%i) is %f." % (xLocation,yLocation,depthValue)
@@ -192,6 +194,9 @@ def main():
         elif(xLocation >= lowestMiddleVar and xLocation <= highestMiddleVar):                                
                 command.angular.y = 0.0
                 command.angular.z = 0.0
+	else:
+		command.angular.y = 0.0
+		command.angular.z = 0.0
 
 	pub.publish(command)
         depthStr = "%.2f" % depthValue
