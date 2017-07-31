@@ -28,7 +28,8 @@ pub = rospy.Publisher('kobuki_command', Twist, queue_size=10)
 command = Twist()
 bumper = True
 pub1 = rospy.Publisher('/mobile_base/commands/led1', Led, queue_size=10)
-pub2 = rospy.Publisher('/mobile_base/commands/led2', Led, queue_size=10)
+pub2 = rospy.Publisher('/mobile_base/
+commands/led2', Led, queue_size=10)
 led = Led()
 
 def mouseClick(event, x, y, flags, param):
@@ -139,7 +140,6 @@ def main():
 	largestBlob = None
 	largestBlobSize = 0
         depthValue = depth.item(yLocation,xLocation,0)
-	#depthValue = depth.item(height/2,width,0)
 	for b in blobsCopy.blobs:
 		if b.name !=  "LightBlue":
 			print("largestBlob is not bright green")
@@ -164,8 +164,8 @@ def main():
         print "Depth at (%i,%i) is %f." % (xLocation,yLocation,depthValue)
 	print color_image
 
-	#command.linear.x = 0.4
-	#command.linear.y = 0.3
+	command.linear.x = 0.4
+	command.linear.y = 0.3
 	if(depthValue < 0.5 or math.isnan(depthValue)):
 		command.linear.x = 0.0
 		command.linear.y = 0.0
@@ -204,9 +204,8 @@ def main():
 	pub.publish(command)
         depthStr = "%.2f" % depthValue
 
-       # cv2.rectangle(color_image, (xLocation-10,yLocation-10), (xLocation+10,yLocation+10), (0,255,0), 2)
-        cv2.rectangle(color_image,(0,height/2 -10 ),(width,height/2 +10),(0,255,0),2)
-	cv2.putText(color_image, depthStr, (xLocation+15,yLocation+10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
+        cv2.rectangle(color_image, (xLocation-10,yLocation-10), (xLocation+10,yLocation+10), (0,255,0), 2)
+        cv2.putText(color_image, depthStr, (xLocation+15,yLocation+10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
         cv2.imshow("Color Image", color_image)
         cv2.waitKey(1)
 

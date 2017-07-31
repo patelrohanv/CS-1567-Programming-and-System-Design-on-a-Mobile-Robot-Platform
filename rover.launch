@@ -3,5 +3,5 @@
 	<include file="$(find openni_launch)/launch/openni.launch"/>
 	<include file="$(find mypackage)/scripts/cmvision.launch"/>
 	<node name="constant_command" pkg="mypackage" type="constant_blobCommand.py"/>
-	<node name="control" pkg="mypackage" type="kinect.py" output="screen" />
+	<node name="control" pkg="mypackage" type="kinect2.py" output="screen" />
 </launch>

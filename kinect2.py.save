@@ -100,7 +100,7 @@ def updateBlobsInfo(data):
 
 def main():
     global depthImage, isDepthImageReady, colorImage, isColorImageReady, xLocation, yLocation, blobsInfo, isBlobsInfoReady
-    rospy.init_node('image_converter', anonymous=True)
+    rospy.init_node('depth_example', anonymous=True)
     #rospy.init_node('showBlobs', anonymous=True)
     rospy.Subscriber("/blobs", Blobs, updateBlobsInfo)
     rospy.Subscriber("/camera/depth/image", Image, updateDepthImage, queue_size=10)
@@ -109,109 +109,68 @@ def main():
     cv2.namedWindow("Color Image")
     cv2.setMouseCallback("Color Image", mouseClick)
 
-    while not isColorImageReady:
-	print("were passing colorImage")
-        pass
-
+    #depthImage, isDepthImageReady
     while not isDepthImageReady:
-	print("were passing depthImage")
-        pass
-
+	pass
 
     while not rospy.is_shutdown():
-        try:
-            depth = bridge.imgmsg_to_cv2(depthImage, desired_encoding="passthrough")
-        except CvBridgeError, e:
-            print e
-            print "depthImage"
+	#step is the array of bytes
+        step = depthImage.step
+        midX = 320
+        midY = 240
+        #multiply 240 by the step to get the row of pixles down to the middle.
+        # 320*4 so that we can go over 320 pixles but there are 4 bytes
+        #middle
+        offset = (240 * step) + (320 * 4)
+        offsetBegining = (240*step) + (40*4)
+        offsetEnd = (240*step) + (600*4)
+        #We have to use 4 bytes to get the pixel depth. thats why its +1,2,3.
+	(dist,) = unpack('f', depthImage.data[offset] + depthImage.data[offset+1] + depthImage.data[offset+2] + depthImage.data[offset+3])
+        #print "Distance: %f" % dist
 
-        try:
-            color_image = bridge.imgmsg_to_cv2(colorImage, "bgr8")
-        except CvBridgeError, e:
-            print e
-            print "colorImage"
-        
-	blobsCopy = copy.deepcopy(blobsInfo)
-	height = blobsCopy.image_height
-	width = blobsCopy.image_width
-	lowestMiddleVar = (width/2) - 50
-	highestMiddleVar = (width/2) + 50
-	largestBlob = None
-	largestBlobSize = 0
-        depthValue = depth.item(yLocation,xLocation,0)
-	#depthValue = depth.item(height/2,width,0)
-	for b in blobsCopy.blobs:
-		if b.name !=  "LightBlue":
-			print("largestBlob is not bright green")
-			continue
-		cv2.rectangle(color_image, (b.left, b.top), (b.right, b.bottom), (0,255,0), 2)
-		if(largestBlob == None):
-			largestBlob = b
-			largestBlobSize = b.right - b.left
-		elif((b.right - b.left) > largestBlobSize):
-			largestBlob = b
-	if (largestBlob != None):
-		xLocation = largestBlob.x
-		yLocation = largestBlob.y
+	(distBegin,) = unpack('f', depthImage.data[offsetBegining] + depthImage.data[offsetBegining+1] + depthImage.data[offsetBegining+2]  + depthImage.data[offsetBegining+3])
+	#print "distanceBegining: %f" % distBegin
+
+	(distEnd,) = unpack('f', depthImage.data[offsetEnd] + depthImage.data[offsetEnd+1] + depthImage.data[offsetEnd+2] + depthImage.data[offsetEnd+3])
+	#print "distangeEnd: %f" % distEnd
+
+        distDiff = distBegin - distEnd
+        distAbs = math.fabs(distDiff)
+        # this is the treshold of difference between the left and right side distances.
+	distanceThresh = 0.2
+
+
+	#print("distancediff:" + str(distDiff))
+	#print("distanceabs:" + str(distAbs))
+	
+	#rospy.sleep(5.0)
+        # if the distance is large, we need to check which is larger and then move accordingly.        
+	if (distAbs > distanceThresh):
+        # we might need a nan before we get in here
+		if(distBegin > distEnd):
+			print("the larger side is right")
+			command.angular.z = -0.2
+			command.angular.y = -2
+			command.linear.x = 0.3
+			command.linear.y = 0.2
+			pub.publish(command)
+		else:
+			print("the larget side is left")
+			command.angular.z = 0.2
+			command.angular.y = 2
+			command.linear.x = 0.3
+			command.linear.y = 0.2
+			pub.publish(command)
+                print("The difference is: " + str(distAbs))
+    
 	else:
-		print "No largest blob"
-		command.linear.x = 0.0
-		command.linear.y = 0.0
+		print("going strait")
+
+		command.linear.x = 0.3
+		command.linear.y = 0.2
 		command.angular.y = 0.0
 		command.angular.z = 0.0
 		pub.publish(command)
-		continue
-        print "Depth at (%i,%i) is %f." % (xLocation,yLocation,depthValue)
-	print color_image
-
-	#command.linear.x = 0.4
-	#command.linear.y = 0.3
-	if(depthValue < 0.5 or math.isnan(depthValue)):
-		command.linear.x = 0.0
-		command.linear.y = 0.0
-	elif(depthValue > 1.1):
-		#speed up
-		#command.linear.x += 0.2
-		temp = 0 
-	elif(depthValue < 0.9):
-		#slow down
-		#command.linear.x -= 0.2
-		temp = 0
-
-	if(xLocation < lowestMiddleVar):
-		 print("largestblob is bright green")
-                 errorNumber = lowestMiddleVar - largestBlob.x
-                 outputNumber = .04 * errorNumber
-                 if(outputNumber > 1.0):
-                 	outputNumber = 1.0
-                 #command.angular.y = 0.2
-                 #command.angular.z = outputNumber
-	elif(xLocation > highestMiddleVar):
-         	errorNumber = largestBlob.x - highestMiddleVar
-                outputNumber = .04 * errorNumber
-                outputNumber = outputNumber * -1.0
-                if(outputNumber < -1.0):
-                	outputNumber = -1.0
-                #command.angular.y = -0.2
-                #command.angular.z = outputNumber
-        elif(xLocation >= lowestMiddleVar and xLocation <= highestMiddleVar):                                
-                command.angular.y = 0.0
-                command.angular.z = 0.0
-	else:
-		command.angular.y = 0.0
-		command.angular.z = 0.0
-
-	pub.publish(command)
-        depthStr = "%.2f" % depthValue
-
-       # cv2.rectangle(color_image, (xLocation-10,yLocation-10), (xLocation+10,yLocation+10), (0,255,0), 2)
-        cv2.rectangle(color_image,(0,height/2 -10 ),(width,height/2 +10),(0,255,0),2)
-	cv2.putText(color_image, depthStr, (xLocation+15,yLocation+10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2)
-        cv2.imshow("Color Image", color_image)
-        cv2.waitKey(1)
-
-    cv2.destroyAllWindows()
-
 
  
 if __name__ == '__main__':
