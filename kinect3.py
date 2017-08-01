@@ -19,9 +19,9 @@ import copy
 blobsInfo = Blobs()
 isBlobsInfoReady = False
 depthImage = Image()
-isDepthImageReady = False;
+isDepthImageReady = False
 colorImage = Image()
-isColorImageReady = False;
+isColorImageReady = False
 xLocation = 320
 yLocation = 240
 pub = rospy.Publisher('kobuki_command', Twist, queue_size=10)
@@ -31,6 +31,7 @@ pub1 = rospy.Publisher('/mobile_base/commands/led1', Led, queue_size=10)
 pub2 = rospy.Publisher('/mobile_base/commands/led2', Led, queue_size=10)
 led = Led()
 turnInfo = 0.0
+checkCorner = False
 
 def mouseClick(event, x, y, flags, param):
     global xLocation, yLocation
@@ -103,7 +104,7 @@ def isNaN(num):
     return num != num
 
 def main():
-    global depthImage, isDepthImageReady, colorImage, isColorImageReady, xLocation, yLocation, blobsInfo, isBlobsInfoReady, turnInfo
+    global depthImage, isDepthImageReady, colorImage, isColorImageReady, xLocation, yLocation, blobsInfo, isBlobsInfoReady, turnInfo, checkCorner
     rospy.init_node('depth_example', anonymous=True)
     #rospy.init_node('showBlobs', anonymous=True)
     rospy.Subscriber("/blobs", Blobs, updateBlobsInfo)
@@ -165,74 +166,30 @@ def main():
 		pub.publish(command)	
 
 	
-	#rospy.sleep(5.0)
         # if the distance is large, we need to check which is larger and then move accordingly.        
-	elif (distAbs > distanceThresh):
-        # we might need a nan before we get in here
-		if(distBegin > distEnd or isNaN(distEnd)):
-			turnInfo = 1.0
-			#print("this isNaN distend: " + str(isNaN(distEnd))) 
-			#print("the larger side is right")
-			if(dist > 1.5 and dist < 7):
-				print "go straigt"
-				pass
-			#WAS 45 AND 60
-			elif(distBegin < 1):
-				command.angular.z = .9
-				command.angular.y = 40
-				command.linear.x = 0.4
-				command.linear.y = 0.4
-			else:
-				command.angular.z = .9
-				command.angular.y = 60
-				command.linear.x = 0.2
-				command.linear.y = 0.2
-			pub.publish(command)
-		elif(distBegin < distEnd or isNaN(distBegin)):
-			turnInfo = -1.0
-			#print("this isNaN DistBegin: " + str(isNaN(distBegin)))
-			#print("the larget side is left")
-			if(dist > 1.5 and dist < 7):
-				print "go str8"
-				pass
-			elif(distEnd < 1 ):
-				#was .95
-                                command.angular.z = -.9
-                                command.angular.y = -40
-                                command.linear.x = 0.4
-                                command.linear.y = 0.4
-			else:
-				command.angular.z = -.9
-				command.angular.y = -60
-				command.linear.x = 0.2
-				command.linear.y = 0.2
-			pub.publish(command)
-                #print("The difference is: " + str(distAbs))
-    
 	else:
-		if(dist < 1.5):
-			if(turnInfo > 0):
-				command.angular.z = .9
-				command.angular.y = 95
-				command.linear.x = 0.0
-				command.linear.y = 0.0
-				pub.publish(command)
-				rospy.sleep(2)
-				turnInfo = 0
-			elif(turnInfo < 0):
-				command.angular.z = -.9
-				command.angular.y = -95
-				command.linear.x = 0.0
-				command.linear.y = 0.0
-				pub.publish(command)
-				turnInfo = 0
-		#print("going strait")
-		command.linear.x = 0.2
-		command.linear.y = 0.2
-		command.angular.y = 0.0
-		command.angular.z = 0.0
-		pub.publish(command)
-
+		if((dist > 1.2)  or isNaN(dist) ):
+			command.linear.x = 0.2
+			command.linear.y = 0.2
+			command.angular.y = 0.0
+			command.angular.z = 0.0
+			pub.publish(command)
+		elif(not checkCorner):
+			checkCorner = True
+			command.angular.y = -180
+			command.angular.z = 0.5
+			command.linear.x = 0.0
+			command.linear.y = 0.0
+			pub.publish(command)
+			rospy.sleep(2)
+		elif(checkCorner):
+			checkCorner = False
+			command.angular.y = 90 
+			command.angular.z = 0.5
+			command.linear.x = 0.0
+			command.linear.y = 0.0
+			pub.publish(command)
+			rospy.sleep(2)
 
     cv2.destoryAllWindows()
 
