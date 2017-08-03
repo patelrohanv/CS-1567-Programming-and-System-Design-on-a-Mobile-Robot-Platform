@@ -32,6 +32,9 @@ pub2 = rospy.Publisher('/mobile_base/commands/led2', Led, queue_size=10)
 led = Led()
 turnInfo = 0.0
 checkCorner = False
+#0 = R, 1 = L
+turns = [0,1,1,1,0,1,1,0]
+tCount = 0
 
 def mouseClick(event, x, y, flags, param):
     global xLocation, yLocation
@@ -104,7 +107,7 @@ def isNaN(num):
     return num != num
 
 def main():
-    global depthImage, isDepthImageReady, colorImage, isColorImageReady, xLocation, yLocation, blobsInfo, isBlobsInfoReady, turnInfo, checkCorner
+    global depthImage, isDepthImageReady, colorImage, isColorImageReady, xLocation, yLocation, blobsInfo, isBlobsInfoReady, turnInfo, checkCorner, turns, tCount
     rospy.init_node('depth_example', anonymous=True)
     #rospy.init_node('showBlobs', anonymous=True)
     rospy.Subscriber("/blobs", Blobs, updateBlobsInfo)
@@ -127,8 +130,8 @@ def main():
         # 320*4 so that we can go over 320 pixles but there are 4 bytes
         #middle
         offset = (240 * step) + (320 * 4)
-        offsetBegining = (240*step) + (80*4)
-        offsetEnd = (240*step) + (560*4)
+        offsetBegining = (240*step) + (40*4)
+        offsetEnd = (240*step) + (600*4)
         #We have to use 4 bytes to get the pixel depth. thats why its +1,2,3.
 	(dist,) = unpack('f', depthImage.data[offset] + depthImage.data[offset+1] + depthImage.data[offset+2] + depthImage.data[offset+3])
         #print "Distance: %f" % dist
@@ -142,7 +145,7 @@ def main():
         distDiff = distBegin - distEnd
         distAbs = math.fabs(distDiff)
         # this is the treshold of difference between the left and right side distances.
-	distanceThresh = 0.3
+	distanceThresh = 0.15
 
 
 	#print("distancediff:" + str(distDiff))
@@ -153,14 +156,14 @@ def main():
 	if(isNaN(distEnd) == True and isNaN(distBegin) == False):
 		#turn left
 		command.angular.z = 0.6
-		command.angular.y = 45
+		command.angular.y = 20
 		command.linear.x = 0.1
 		command.linear.y = 0.1
 		pub.publish(command)
 	elif(isNaN(distEnd) == False and isNaN(distBegin) == True):
 		#turn right
 		command.angular.z = -0.6
-		command.angular.y = -45
+		command.angular.y = -20
 		command.linear.x = 0.1
 		command.linear.y = 0.1
 		pub.publish(command)	
@@ -168,28 +171,66 @@ def main():
 	
         # if the distance is large, we need to check which is larger and then move accordingly.        
 	else:
-		if((dist > 1.2)  or isNaN(dist) ):
+		if((dist > 1.2)  or isNaN(dist)):
 			command.linear.x = 0.2
 			command.linear.y = 0.2
 			command.angular.y = 0.0
 			command.angular.z = 0.0
 			pub.publish(command)
-		elif(not checkCorner):
-			checkCorner = True
-			command.angular.y = -180
-			command.angular.z = 0.5
-			command.linear.x = 0.0
-			command.linear.y = 0.0
-			pub.publish(command)
-			rospy.sleep(2)
-		elif(checkCorner):
-			checkCorner = False
-			command.angular.y = 90 
-			command.angular.z = 0.5
-			command.linear.x = 0.0
-			command.linear.y = 0.0
-			pub.publish(command)
-			rospy.sleep(2)
+		else:
+			if(turns[tCount] == 0):
+				command.angular.y = -90
+				command.angular.z = -0.7
+				command.linear.x = 0.0
+				command.linear.y = 0.0
+				tCount += 1
+				pub.publish(command)
+				rospy.sleep(3)
+				command.linear.x = 0.5
+				command.linear.y = 1.0
+				command.angular.z = 0.0
+				command.angular.y = 0.0
+				pub.publish(command)
+				rospy.sleep(2)
+			
+			else:
+				command.angular.y = 90
+				command.angular.z = 0.7
+				command.linear.x = 0.0
+				command.linear.y = 0.0
+				tCount += 1
+				pub.publish(command)
+				rospy.sleep(3)
+				command.linear.x = 0.5
+				command.linear.y = 1.0
+				command.angular.z = 0.0
+				command.angular.y = 0.0
+				pub.publish(command)
+				rospy.sleep(2)
+		
+#		elif(not checkCorner):
+#			checkCorner = True
+#			command.angular.y = -180
+#			command.angular.z = 0.5
+#			command.linear.x = 0.0
+#			command.linear.y = 0.0
+#			pub.publish(command)
+#			rospy.sleep(2)
+#		elif(checkCorner):
+#			checkCorner = False
+#			command.angular.y = 90 
+#			command.angular.z = 0.5
+#			command.linear.x = 0.0
+#			command.linear.y = 0.0
+#			pub.publish(command)
+#			rospy.sleep(2)
+#			if(not isNaN(dist)):
+#				command.angular.y = -180
+#				command.angular.z = 0.5
+#				commandsddd.linear.x = 0.0
+#				command.linear.y = 0.0
+#				pub.publish(command)
+#				rospy.sleep(2)
 
     cv2.destoryAllWindows()
 

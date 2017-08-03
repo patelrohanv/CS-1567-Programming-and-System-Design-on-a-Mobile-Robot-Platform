@@ -30,7 +30,6 @@ bumper = True
 pub1 = rospy.Publisher('/mobile_base/commands/led1', Led, queue_size=10)
 pub2 = rospy.Publisher('/mobile_base/commands/led2', Led, queue_size=10)
 led = Led()
-turnInfo = 0.0
 
 def mouseClick(event, x, y, flags, param):
     global xLocation, yLocation
@@ -102,8 +101,11 @@ def updateBlobsInfo(data):
 def isNaN(num):
     return num != num
 
+def mean(numbers):
+	 return float(sum(numbers)) / max(len(numbers), 1)
+
 def main():
-    global depthImage, isDepthImageReady, colorImage, isColorImageReady, xLocation, yLocation, blobsInfo, isBlobsInfoReady, turnInfo
+    global depthImage, isDepthImageReady, colorImage, isColorImageReady, xLocation, yLocation, blobsInfo, isBlobsInfoReady
     rospy.init_node('depth_example', anonymous=True)
     #rospy.init_node('showBlobs', anonymous=True)
     rospy.Subscriber("/blobs", Blobs, updateBlobsInfo)
@@ -126,19 +128,42 @@ def main():
         # 320*4 so that we can go over 320 pixles but there are 4 bytes
         #middle
         offset = (240 * step) + (320 * 4)
-        offsetBegining = (240*step) + (80*4)
-        offsetEnd = (240*step) + (560*4)
+        offsetBegining = (240*step) + (40*4)
+        offsetBegining1 = (240*step) + (45*4)
+        offsetBegining2 = (240*step) + (35*4)
+        offsetBegining3 = (230*step) + (40*4)
+        offsetBegining4 = (250*step) + (40*4)
+        offsetEnd = (240*step) + (600*4)
+        offsetEnd1 = (235*step) + (600*4)
+        offsetEnd2 = (245*step) + (600*4)
+        offsetEnd3 = (240*step) + (595*4)
+        offsetEnd4 = (240*step) + (605*4)
         #We have to use 4 bytes to get the pixel depth. thats why its +1,2,3.
 	(dist,) = unpack('f', depthImage.data[offset] + depthImage.data[offset+1] + depthImage.data[offset+2] + depthImage.data[offset+3])
         #print "Distance: %f" % dist
 
 	(distBegin,) = unpack('f', depthImage.data[offsetBegining] + depthImage.data[offsetBegining+1] + depthImage.data[offsetBegining+2]  + depthImage.data[offsetBegining+3])
+	(distBegin1,) = unpack('f', depthImage.data[offsetBegining1] + depthImage.data[offsetBegining1+1] + depthImage.data[offsetBegining1+2] + depthImage.data[offsetBegining1+3])
+	(distBegin2,) = unpack('f', depthImage.data[offsetBegining2] + depthImage.data[offsetBegining2+1] + depthImage.data[offsetBegining2+2] + depthImage.data[offsetBegining2+3])
+	(distBegin3,) = unpack('f', depthImage.data[offsetBegining3] + depthImage.data[offsetBegining3+1] + depthImage.data[offsetBegining3+2] + depthImage.data[offsetBegining3+3])
+	(distBegin4,) = unpack('f', depthImage.data[offsetBegining4] + depthImage.data[offsetBegining4+1] + depthImage.data[offsetBegining4+2] + depthImage.data[offsetBegining4+3])
 	#print "distanceBegining: %f" % distBegin
 
 	(distEnd,) = unpack('f', depthImage.data[offsetEnd] + depthImage.data[offsetEnd+1] + depthImage.data[offsetEnd+2] + depthImage.data[offsetEnd+3])
+	(distEnd1,) = unpack('f', depthImage.data[offsetEnd1] + depthImage.data[offsetEnd1+1] + depthImage.data[offsetEnd1+2] + depthImage.data[offsetEnd1+3])
+	(distEnd2,) = unpack('f', depthImage.data[offsetEnd2] + depthImage.data[offsetEnd2+1] + depthImage.data[offsetEnd2+2] + depthImage.data[offsetEnd2+3])
+	(distEnd3,) = unpack('f', depthImage.data[offsetEnd3] + depthImage.data[offsetEnd3+1] + depthImage.data[offsetEnd3+2] + depthImage.data[offsetEnd3+3])
+	(distEnd4,) = unpack('f', depthImage.data[offsetEnd4] + depthImage.data[offsetEnd4+1] + depthImage.data[offsetEnd4+2] + depthImage.data[offsetEnd4+3])
+	
+	beginArray = [distBegin,distBegin1,distBegin2,distBegin3,distBegin4]
+	endArray = [distEnd,distEnd1,distEnd2,distEnd3,distEnd4]
+	
 	#print "distangeEnd: %f" % distEnd
 
-        distDiff = distBegin - distEnd
+	sameBegin = mean(beginArray)
+	sameEnd = mean(endArray)
+        #distDiff = distBegin - distEnd
+	distDiff = sameBegin - sameEnd
         distAbs = math.fabs(distDiff)
         # this is the treshold of difference between the left and right side distances.
 	distanceThresh = 0.3
@@ -152,57 +177,69 @@ def main():
 	if(isNaN(distEnd) == True and isNaN(distBegin) == False):
 		#turn left
 		command.angular.z = 0.6
-		command.angular.y = 45
+		command.angular.y = 25
 		command.linear.x = 0.1
 		command.linear.y = 0.1
 		pub.publish(command)
 	elif(isNaN(distEnd) == False and isNaN(distBegin) == True):
 		#turn right
 		command.angular.z = -0.6
-		command.angular.y = -45
+		command.angular.y = -25
 		command.linear.x = 0.1
 		command.linear.y = 0.1
 		pub.publish(command)	
 
 	
-	#rospy.sleep(5.0)
+		#rospy.sleep(5.0)
         # if the distance is large, we need to check which is larger and then move accordingly.        
 	elif (distAbs > distanceThresh):
         # we might need a nan before we get in here
 		if(distBegin > distEnd or isNaN(distEnd)):
-			turnInfo = 1.0
+			if(isNaN(distEnd) or dist < 0.9):
+				command.angular.z = .95
+                                command.angular.y = 45
+                                command.linear.x = 0.2
+                                command.linear.y = 0.2
+
 			#print("this isNaN distend: " + str(isNaN(distEnd))) 
 			#print("the larger side is right")
-			if(dist > 1.5 and dist < 7):
-				print "go straigt"
+			elif(dist > 2.2 and dist < 7):
+			#if(dist > 2.2 and dist < 7 or dist < .8):
+				#print "go straigt"
 				pass
 			#WAS 45 AND 60
 			elif(distBegin < 1):
-				command.angular.z = .9
-				command.angular.y = 40
-				command.linear.x = 0.4
-				command.linear.y = 0.4
+				command.angular.z = .95
+				command.angular.y = 45
+				command.linear.x = 0.2
+				command.linear.y = 0.2
 			else:
-				command.angular.z = .9
+				command.angular.z = .95
 				command.angular.y = 60
 				command.linear.x = 0.2
 				command.linear.y = 0.2
 			pub.publish(command)
 		elif(distBegin < distEnd or isNaN(distBegin)):
-			turnInfo = -1.0
 			#print("this isNaN DistBegin: " + str(isNaN(distBegin)))
 			#print("the larget side is left")
-			if(dist > 1.5 and dist < 7):
+			#if(dist > 2.2 and dist < 7 or dist < .5):
+			if(isNaN(distBegin) or dist < 0.9):
+				command.angular.z = -.95
+				command.angular.y = -45
+				command.linear.x = 0.2
+				command.linear.y = 0.2
+
+			elif(dist > 2.2 and dist < 7):
 				print "go str8"
 				pass
 			elif(distEnd < 1 ):
 				#was .95
-                                command.angular.z = -.9
-                                command.angular.y = -40
-                                command.linear.x = 0.4
-                                command.linear.y = 0.4
+                                command.angular.z = -.95
+                                command.angular.y = -45
+                                command.linear.x = 0.2
+                                command.linear.y = 0.2
 			else:
-				command.angular.z = -.9
+				command.angular.z = -.95
 				command.angular.y = -60
 				command.linear.x = 0.2
 				command.linear.y = 0.2
@@ -210,22 +247,6 @@ def main():
                 #print("The difference is: " + str(distAbs))
     
 	else:
-		if(dist < 1.5):
-			if(turnInfo > 0):
-				command.angular.z = .9
-				command.angular.y = 95
-				command.linear.x = 0.0
-				command.linear.y = 0.0
-				pub.publish(command)
-				rospy.sleep(2)
-				turnInfo = 0
-			elif(turnInfo < 0):
-				command.angular.z = -.9
-				command.angular.y = -95
-				command.linear.x = 0.0
-				command.linear.y = 0.0
-				pub.publish(command)
-				turnInfo = 0
 		#print("going strait")
 		command.linear.x = 0.2
 		command.linear.y = 0.2
@@ -233,9 +254,7 @@ def main():
 		command.angular.z = 0.0
 		pub.publish(command)
 
-
-    cv2.destoryAllWindows()
-
  
 if __name__ == '__main__':
     main()
+
